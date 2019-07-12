@@ -1,5 +1,5 @@
 // Dat daemon ipc
-const serverHandlers = require('./dat-handlers');
+const serverHandlers = require('./dat-handlers')();
 const ipc = require('./dat-ipc');
 
 let isDev;
