@@ -1,11 +1,11 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
+import PropTypes from 'prop-types';
 
 import {makeStyles} from '@material-ui/core/styles';
 import Grid from '@material-ui/core/Grid';
 import Paper from '@material-ui/core/Paper';
 import TextField from '@material-ui/core/TextField';
 import SortableTree from 'react-sortable-tree';
-import FileExplorerTheme from 'react-sortable-tree-theme-file-explorer';
 import 'react-sortable-tree/style.css';
 
 const useStyles = makeStyles(theme => ({
@@ -27,13 +27,20 @@ const useStyles = makeStyles(theme => ({
 
 function Home(props) {
   const classes = useStyles();
-  const [filter, setFilter] = React.useState('');
-  const [treeData, setTreeData] = React.useState([{title: 'title 1', children: [{title: 'sub title 1'}]}]);
+  const [filter, setFilter] = useState('');
+  const [treeData, setTreeData] = useState(props.content);
 
   console.log(treeData);
   const handleChange = event => {
     setFilter(event.target.value);
   };
+
+  /*
+  useEffect(() => {
+    const meta2 = props.archives.map(a => a.metadata)
+    setTreeData([props.main.metadata, ...meta2]);
+  }, [props.main.metadata, props.archives]);
+  */
 
   return (
     <Grid
@@ -65,5 +72,15 @@ function Home(props) {
     </Grid>
   );
 }
+
+Home.defaultProps = {
+  main: {},
+  archives: []
+};
+
+Home.propTypes = {
+  main: PropTypes.object,
+  archives: PropTypes.array
+};
 
 export default Home;
