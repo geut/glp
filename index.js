@@ -16,6 +16,10 @@ contextMenu();
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
+if (isDevelopment && module.hot) {
+  module.hot.accept();
+}
+
 // Note: Must match `build.appId` in package.json
 app.setAppUserModelId('com.company.AppName');
 

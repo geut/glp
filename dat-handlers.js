@@ -82,8 +82,11 @@ class DatHandler {
     this.messagesHistory = [];
     this.mainArchive = null;
     // external archives
-    this.archives = [];
-    this.keys = new Set();
+    this.archives = new Map();
+    this.metadata = new Map();
+    this.defaultMetadata = {
+      children: [{}]
+    };
   }
 
   ping() {
@@ -95,12 +98,16 @@ class DatHandler {
   }
 
   getArchives() {
-    return Promise.resolve(this.archives);
+    return Promise.resolve(this.archives.keys());
+  }
+
+  getMetadata() {
+    return Promise.resolve(Array.from(this.metadata.values()));
   }
 
   addDat({isMain, key, datOpts}) {
 
-    if (key && this.keys.has(key)) {
+    if (key && this.archives.has(key)) {
       console.log('Already loaded key. Nothing to do.');
       return;
     }
@@ -118,11 +125,37 @@ class DatHandler {
       ...datOpts
     }
 
+    const getDatJSON = async (archive) => {
+      return new Promise((resolve, reject) => {
+        archive.readFile('/dat.json', (err, content) => {
+          let metadata = {
+            ...this.defaultMetadata,
+            url: archive.key.toString('hex'),
+            title: archive.key.toString('hex').slice(0, 6),
+            description: 'External Dat'
+          };
+          if (err) {
+            console.warn(err);
+            return resolve(metadata)
+          }
+
+          try {
+            const rawMeta = JSON.parse(content);
+            metadata = {...this.defaultMetadata, ...rawMeta, url: archive.key.toString('hex')};
+            resolve(metadata)
+            // TODO: emit metadata :thinking_face:
+          } catch (_) {}
+        });
+      })
+    }
+
     return new Promise((resolve, reject) => {
       dat(destDir, {key, sparse: true}, async (err, dat) => {
         if (err) {
           return reject(err);
         }
+
+        key = dat.archive.key.toString('hex');
 
         dat.joinNetwork();
 
@@ -131,48 +164,39 @@ class DatHandler {
         if (dat.writable) {
           dat.importFiles(importOpts);
         }
+
         // TODO: emit dat loaded ok
 
+        const datJSON = await getDatJSON(dat.archive);
+        console.log({datJSON})
+        this.metadata.set(key, datJSON);
 
-        dat.archive.readFile('/dat.json', (err, content) => {
-          let metadata = {metadata: {title: 'external Dat'}};
-          if (err) {
-            console.warn(err);
-            return;
-          }
-
-          try {
-            metadata = JSON.parse(content);
-            // TODO: emit metadata
-          } catch (_) {}
-        });
-
-        this.keys.add(dat.archive.key);
         if (isMain) {
-          this.mainArchive = dat.archive;
+          this.mainArchive = key;
         }
-        else {
-          this.archives.push(dat.archive);
-        }
-        resolve();
+
+        this.archives.set(key, dat.archive);
+
+        resolve(key);
       });
     });
   }
 
-  async getContent({ archive, path }) {
+  async getContent({ key, path }) {
     path = path || '/';
     // FIXME @deka: I need to rethink this whole interaction. the archive is not being passed correctly
     // due to the stringify on the dat-ipc. So I can pass the archive key for ex, as an identifier to get
     // the selected hyperdrive content.
-    const found = await stat(this.mainArchive, path);
+    const archive = this.archives.get(key);
+    const found = await stat(archive, path);
     if (found.isFile()) {
       const fileContent = await getFileContent(archive, path);
       console.log('fileContent', fileContent);
     } else {
       // return files
-      const list = await getDirContent(this.mainArchive, path);
+      const list = await getDirContent(archive, path);
       console.log({ list });
-      const files = await buildFileItems(this.mainArchive, list);
+      const files = await buildFileItems(archive, list);
       console.log({ files });
       return files;
     }

@@ -5,7 +5,7 @@ import {makeStyles} from '@material-ui/core/styles';
 import Grid from '@material-ui/core/Grid';
 import Paper from '@material-ui/core/Paper';
 import TextField from '@material-ui/core/TextField';
-import SortableTree from 'react-sortable-tree';
+import SortableTree, {changeNodeAtPath} from 'react-sortable-tree';
 import 'react-sortable-tree/style.css';
 
 const useStyles = makeStyles(theme => ({
@@ -28,19 +28,35 @@ const useStyles = makeStyles(theme => ({
 function Home(props) {
   const classes = useStyles();
   const [filter, setFilter] = useState('');
-  const [treeData, setTreeData] = useState(props.content);
+  const [treeData, setTreeData] = useState(props.metadata);
 
   console.log(treeData);
   const handleChange = event => {
     setFilter(event.target.value);
   };
 
-  /*
-  useEffect(() => {
-    const meta2 = props.archives.map(a => a.metadata)
-    setTreeData([props.main.metadata, ...meta2]);
-  }, [props.main.metadata, props.archives]);
-  */
+  const getNodeKey = ({ treeIndex }) => treeIndex;
+
+  const updateTree = async ({treeData: td, node, expanded, path}) => {
+    console.log({expanded})
+    if (!expanded) return;
+    if (node.children[0].title) return;
+    console.log({node})
+    const content = await window.send('getContent', {key: node.url});
+    console.log({content})
+    // update treedata node children
+    const newTree = changeNodeAtPath({
+      treeData: td,
+      path,
+      getNodeKey,
+      newNode: {
+        ...node,
+        children: content
+      }
+    })
+
+    setTreeData(newTree);
+  }
 
   return (
     <Grid
@@ -66,6 +82,7 @@ function Home(props) {
             treeData={treeData}
             isVirtualized={false}
             onChange={treeData => setTreeData(treeData)}
+            onVisibilityToggle={updateTree}
           />
         </Paper>
       </Grid>
@@ -74,13 +91,15 @@ function Home(props) {
 }
 
 Home.defaultProps = {
-  main: {},
-  archives: []
+  mainKey: '',
+  archives: [],
+  metadata: []
 };
 
 Home.propTypes = {
-  main: PropTypes.object,
-  archives: PropTypes.array
+  mainKey: PropTypes.string,
+  archives: PropTypes.array,
+  metadata: PropTypes.array
 };
 
 export default Home;

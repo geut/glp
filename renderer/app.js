@@ -27,19 +27,22 @@ function AppContainer() {
   const datKeys = Config.get('keys');
   const [mainArchive, setMainArchive] = useState({});
   const [extArchives, setExtArchives] = useState([]);
-  const [content, setContent] = useState([]);
+  // TODO(deka): move content to home component...
+  const [metadata, setMetadata] = useState([]);
 
   useEffect(() => {
     const getContent = async () => {
-      await window.send('addDat', {isMain: true});
+      const mainKey = await window.send('addDat', {isMain: true});
+      setMainArchive(mainKey);
       await Promise.all(datKeys.map(async key => {
-        return await window.send('addDat', {key});
+        const val = await window.send('addDat', {key});
+        return val;
       }));
-      const extraDats = await window.send('getArchives');
-      console.log({extraDats})
-      const newContent = await window.send('getContent', {archive: extraDats[0]});
-      console.log({newContent});
-      setContent(newContent);
+      const archives = await window.send('getArchives');
+      const meta = await window.send('getMetadata');
+      console.log({meta});
+      setExtArchives(archives);
+      setMetadata(meta);
     };
 
     getContent();
@@ -48,7 +51,7 @@ function AppContainer() {
   return (
     <div className={classes.root}>
       <h1 className={classes.title}><i>GLP</i> 📑</h1>
-      {content.length > 0 ? <Home main={mainArchive} extra={extArchives} content={content}/> : <h2>Loading...</h2>}
+      {metadata.length > 0 ? <Home mainKey={mainArchive} extra={extArchives} metadata={metadata} /> : <h2>Loading...</h2>}
     </div>
   );
 }
