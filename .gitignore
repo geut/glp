@@ -1,3 +1,5 @@
 node_modules
 yarn.lock
 /dist
+/glp_main
+/glp_archives
