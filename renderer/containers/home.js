@@ -8,6 +8,9 @@ import TextField from '@material-ui/core/TextField';
 import SortableTree, {changeNodeAtPath} from 'react-sortable-tree';
 import 'react-sortable-tree/style.css';
 
+import {useStateValue} from '../hooks';
+import ContentButton from '../components/button';
+
 const useStyles = makeStyles(theme => ({
   filter: {
     textAlign: 'center',
@@ -27,6 +30,7 @@ const useStyles = makeStyles(theme => ({
 
 function Home(props) {
   const classes = useStyles();
+  const [_, dispatch] = useStateValue();
   const [filter, setFilter] = useState('');
   const [treeData, setTreeData] = useState(props.metadata);
 
@@ -35,12 +39,12 @@ function Home(props) {
     setFilter(event.target.value);
   };
 
-  const getNodeKey = ({ treeIndex }) => treeIndex;
+  const getNodeKey = ({treeIndex}) => treeIndex;
 
   const updateTree = async ({treeData: td, node, expanded, path}) => {
     console.log({expanded})
     if (!expanded) return;
-    if (node.children[0].title) return;
+    if (node.children[0].title) return; // already has childrens, nothing to do.
     console.log({node})
     const content = await window.send('getContent', {key: node.url});
     console.log({content})
@@ -51,12 +55,23 @@ function Home(props) {
       getNodeKey,
       newNode: {
         ...node,
-        children: content
+        children: content,
+        expanded: true
       }
-    })
+    });
 
     setTreeData(newTree);
-  }
+  };
+
+  const renderContent = nodeInfo => {
+    dispatch({
+      type: 'GOTO',
+      activePage: 'detail',
+      state: {
+        fileData: nodeInfo
+      }
+    });
+  };
 
   return (
     <Grid
@@ -81,8 +96,14 @@ function Home(props) {
           <SortableTree
             treeData={treeData}
             isVirtualized={false}
-            onChange={treeData => setTreeData(treeData)}
+            canDrag={false}
+            generateNodeProps={rowInfo => ({
+              buttons: [
+                <ContentButton key={`treeButton_${rowInfo.treeIndex}`} renderContent={renderContent} rowInfo={rowInfo}/>
+              ]
+            })}
             onVisibilityToggle={updateTree}
+            onChange={treeData => setTreeData(treeData)}
           />
         </Paper>
       </Grid>

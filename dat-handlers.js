@@ -1,10 +1,16 @@
 const assert = require('assert');
+const {pipeline} = require('stream');
+const {promises:fsPromises, createWriteStream} = require('fs');
+const {join} = require('path');
 const {promisify} = require('util');
 const mkdirp = require('mkdirp');
 const dat = require('dat-node');
+const fileType = require('file-type');
 const Config = require('./config');
 
+const {access} = fsPromises;
 const pmkdirp = promisify(mkdirp);
+const ppipeline = promisify(pipeline)
 
 /** Helpers **/
 const defaultState = () => ({
@@ -66,7 +72,7 @@ async function buildFileItems(archive, list, explorerState=defaultState()) {
     }
 
     if (!fileStat.isFile()) {
-      item.children = [];
+      item.children = [{}];
     }
 
     fileItems.push(item)
@@ -105,16 +111,16 @@ class DatHandler {
     return Promise.resolve(Array.from(this.metadata.values()));
   }
 
-  addDat({isMain, key, datOpts}) {
+  async addDat({isMain, key, datOpts}) {
 
     if (key && this.archives.has(key)) {
       console.log('Already loaded key. Nothing to do.');
       return;
     }
 
-    let destDir = Config.get('directories').dest;
-    if (isMain) {
-      destDir = Config.get('directories').main;
+    let destDir = Config.get('directories').main;
+    if (!isMain) {
+      destDir = Config.get('directories').dest;
     }
 
     const importOpts = {
@@ -142,11 +148,19 @@ class DatHandler {
           try {
             const rawMeta = JSON.parse(content);
             metadata = {...this.defaultMetadata, ...rawMeta, url: archive.key.toString('hex')};
-            resolve(metadata)
             // TODO: emit metadata :thinking_face:
-          } catch (_) {}
+          } catch (_) {
+          }
+          resolve(metadata)
         });
       })
+    }
+
+    let pathkey = key;
+    if (key && key.startsWith('dat://')){
+      pathkey = key.slice(6,key.length);
+      destDir = join(destDir, pathkey);
+      await pmkdirp(destDir);
     }
 
     return new Promise((resolve, reject) => {
@@ -164,9 +178,7 @@ class DatHandler {
         if (dat.writable) {
           dat.importFiles(importOpts);
         }
-
         // TODO: emit dat loaded ok
-
         const datJSON = await getDatJSON(dat.archive);
         console.log({datJSON})
         this.metadata.set(key, datJSON);
@@ -180,6 +192,49 @@ class DatHandler {
         resolve(key);
       });
     });
+  }
+
+  async downloadFile(archive, filename, filePath) {
+    return new Promise((resolve, reject) => {
+      pipeline(
+        archive.createReadStream(filename),
+        createWriteStream(filePath),
+        (err) => {
+          if (err) {
+            console.error(err);
+            return reject(err);
+          } else {
+            console.log('File saved succesfully');
+            return resolve();
+          }
+        }
+      )
+    });
+  }
+
+  async getFileTypeAndPath({ key, filename }) {
+    assert.ok(key, 'key is required');
+    assert.ok(filename, 'filename is required');
+    const isMain = this.mainArchive === key;
+    const dirs = Config.get('directories');
+    const archive = this.archives.get(key);
+    const read = archive.createReadStream(filename);
+    let filePath = join(isMain ? dirs.main : dirs.dest, filename);
+
+    if (!isMain){
+      filePath = join(isMain ? dirs.main : dirs.dest, key, filename);
+      const parent = join(isMain ? dirs.main : dirs.dest, key);
+      await pmkdirp(parent);
+      try {
+        // check if file exists
+        await access(filePath);
+      } catch (_) {
+        // file does not exists, dwld it
+        await this.downloadFile(archive, filename, filePath);
+      }
+    }
+    const ftStream = await fileType.stream(read);
+    return {fileType: ftStream.fileType, filePath};
   }
 
   async getContent({ key, path }) {

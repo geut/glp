@@ -3,10 +3,10 @@ import ReactDOM from 'react-dom';
 import '../client-preload';
 import './client-ipc';
 import '../index.css';
-import AppContainer from './app';
+import Root from './root';
 
 // Render React app inside root
 ReactDOM.render(
-  <AppContainer/>,
+  <Root/>,
   document.querySelector('#app')
 );

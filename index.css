@@ -1,3 +1,5 @@
+@import '~typeface-cooper-hewitt';
+
 html,
 body {
 	padding: 0;
@@ -7,7 +9,8 @@ body {
 
 /* Use OS default fonts */
 body {
-	font-family: -apple-system,
+	font-family: 'Cooper Hewitt',
+                -apple-system,
 		BlinkMacSystemFont,
 		'Segoe UI',
 		Roboto,
