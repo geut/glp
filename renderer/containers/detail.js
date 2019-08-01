@@ -28,35 +28,54 @@ const useStyles = makeStyles(theme => ({
   }
 }));
 
+// NOTE(dk): move to components/ dir as a new component ...
 const SimpleLoader = () => {
+  const [, dispatch] = useStateValue();
+
+  const goHome = e => {
+    e.preventDefault();
+    dispatch({
+      type: 'GOTO',
+      activePage: 'home'
+    });
+  };
+
   return (
     <div>
-      <p>Fetching file...</p>
+      <Breadcrumbs aria-label="Breadcrumb">
+        <Link color="inherit" href="/" onClick={goHome}>
+          Home
+        </Link>
+      </Breadcrumbs>
       <LinearProgress/>
+      <Typography gutterBottom align="center" variant="h6">
+        Fetching file...
+      </Typography>
     </div>
   );
 };
 
 const Detail = props => {
   const classes = useStyles();
-  const [_, dispatch] = useStateValue();
+  const [, dispatch] = useStateValue();
   const [fileContent, setFileContent] = useState();
   const {fileData} = props;
 
   useEffect(() => {
     const getFile = async () => {
-      const {fileType, filePath} = await window.send('getFileTypeAndPath', {key: fileData.parentNode.url, filename: fileData.node.fullPath});
-      console.log({fileType, filePath})
+      console.log('retrieving file...');
+      const {fileType, filePath} = await window.send('getFileTypeAndPath', {key: fileData.url, filename: fileData.fullPath});
+      console.log({fileType, filePath});
       if (fileType === undefined) {
         // TODO(deka): check nodeInfo.node.title extension
         // it will probably rendered inside a code block element.
         const fc = await readFile(filePath);
-        console.log({fc})
+        console.log({fc});
         // TODO(deka): IMPROVE THIS.
         setFileContent(fc.toString());
       } else {
         // TODO(deka): check fileType.ext for choosing the right representation element
-        console.log('top kids!')
+        console.log('render not supported yet');
       }
     };
 
@@ -79,13 +98,12 @@ const Detail = props => {
             <Link color="inherit" href="/" onClick={goHome}>
               Home
             </Link>
-            <Typography color="textPrimary">{fileData.node.title}</Typography>
+            <Typography color="textPrimary">{fileData.title}</Typography>
           </Breadcrumbs>
           <div>
-            <Block content={fileContent} title={fileData.node.title}/>
+            <Block content={fileContent} title={fileData.title}/>
           </div>
-        </>
-        :
+        </> :
         <SimpleLoader/>}
     </div>
   );
