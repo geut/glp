@@ -20,7 +20,6 @@ function connectSocket(name, onOpen) {
   window.ipcConnect(name, client => {
     client.on('message', data => {
       const msg = JSON.parse(data);
-      console.log({data})
       if (msg.type === 'error') {
         // Up to you whether or not to care about the error
         const {id} = msg;
