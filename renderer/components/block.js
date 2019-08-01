@@ -1,7 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import Paper from '@material-ui/core/Paper';
-import IconButton from '@material-ui/core/IconButton';
 
 import {makeStyles} from '@material-ui/core/styles';
 
@@ -12,7 +11,8 @@ const useStyles = makeStyles(theme => ({
   },
   block: {
     borderRadius: '40px 10px',
-    backgroundColor: 'gray'
+    backgroundColor: theme.palette.grey.A100,
+    padding: theme.spacing(1)
   }
 }));
 
