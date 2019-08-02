@@ -1,6 +1,7 @@
 import React, {useState, useEffect} from 'react';
 
 import {makeStyles} from '@material-ui/core/styles';
+import Fade from '@material-ui/core/Fade';
 
 import {switchcase} from 'common/utils';
 import Config from '../config';
@@ -24,15 +25,8 @@ const useStyles = makeStyles(theme => ({
   }
 }));
 
-/*
-Const datLinks = Config.get('keys')
-const { archives, loading } = await setupArchives(datLinks)
-const archivesContext = createContext(archives)
-*/
-
 function AppContainer() {
   const classes = useStyles();
-  const datKeys = Config.get('keys');
   const [{activePage, fileData}, dispatch] = useStateValue();
   // NOTE(deka): local state, possibly these should be moved inside useStateValue
   const [mainArchive, setMainArchive] = useState({});
@@ -42,7 +36,8 @@ function AppContainer() {
 
   useEffect(() => {
     const getContent = async () => {
-      console.log('getContent')
+      console.log('getContent');
+      const datKeys = Config.get('keys');
       const mainKey = await window.send('addDat', {isMain: true});
       setMainArchive(mainKey);
       await Promise.all(datKeys.map(async key => {
@@ -64,8 +59,8 @@ function AppContainer() {
     <main className={classes.root}>
       {switchcase({
         loading: () => <Loader/>,
-        home: () => <Home mainKey={mainArchive} extra={extArchives} metadata={metadata}/>,
-        detail: () => <Detail fileData={fileData}/>
+        home: () => <Fade in><Home mainKey={mainArchive} extra={extArchives} metadata={metadata}/></Fade>,
+        detail: () => <Fade in><Detail fileData={fileData}/></Fade>
       })(<Loader/>)(activePage)}
     </main>
   );

@@ -1,6 +1,6 @@
 const assert = require('assert');
 const {pipeline} = require('stream');
-const {promises:fsPromises, createWriteStream} = require('fs');
+const {promises: fsPromises, createWriteStream} = require('fs');
 const {join} = require('path');
 const {promisify} = require('util');
 const mkdirp = require('mkdirp');
@@ -10,7 +10,7 @@ const Config = require('./config');
 
 const {access} = fsPromises;
 const pmkdirp = promisify(mkdirp);
-const ppipeline = promisify(pipeline)
+const ppipeline = promisify(pipeline);
 
 /** Helpers **/
 const defaultState = () => ({
@@ -19,63 +19,69 @@ const defaultState = () => ({
 
 function getFileContent(archive, path) {
   return new Promise((resolve, reject) => {
-    // todo, check file type (mime type?)
+    // Todo, check file type (mime type?)
     archive.readFile(path, 'utf-8', (err, content) => {
-      if (err) reject(err);
-      else resolve(content);
-    })
+      if (err) {
+        reject(err);
+      } else {
+        resolve(content);
+      }
+    });
   });
 }
 
-function getDirContent(archive, path){
+function getDirContent(archive, path) {
   return new Promise((resolve, reject) => {
     archive.readdir(path, (err, files) => {
-      if (err) reject(err);
-      else {
+      if (err) {
+        reject(err);
+      } else {
         resolve(files);
       }
     });
-  })
+  });
 }
 
 async function stat(archive, path) {
   return new Promise((resolve, reject) => {
     archive.stat(path, (err, stat) => {
-      if (err) reject(err);
-      else resolve(stat);
-    })
-  })
+      if (err) {
+        reject(err);
+      } else {
+        resolve(stat);
+      }
+    });
+  });
 }
 
-function buildPath(explorerState, filename) {
-  const path = explorerState.parents.reduce((prev, curr) => {
-    return `${prev}/${curr}`;
-  }, '');
-  return `${path}/${filename}`.replace(/^\/+/g, '');
+function buildPath(parentPath, filename) {
+  const path = join(parentPath, filename);
+  return path.replace(/^\/+/g, '');
 }
 
-async function buildFileItems(archive, list, explorerState=defaultState()) {
+async function buildFileItems(archive, list, parentPath) {
   console.log('buildFileItems triggered.');
 
   const fileItems = [];
   for (let i = 0; i < list.length; i++) {
     const filename = list[i];
-    const fullPath = buildPath(explorerState, filename);
+    const fullPath = buildPath(parentPath, filename);
     const fileStat = await stat(archive, fullPath);
 
     const item = {
+      url: archive.key.toString('hex'),
       title: filename,
       size: fileStat.size,
       modifiedTimestamp: fileStat.mtime.getTime(),
       nativeIndex: i,
       fullPath
-    }
+    };
 
     if (!fileStat.isFile()) {
-      item.children = [{}];
+      item.children = [];
     }
 
-    fileItems.push(item)
+    fileItems.push(item);
   }
 
   return fileItems;
@@ -87,11 +93,11 @@ class DatHandler {
   constructor() {
     this.messagesHistory = [];
     this.mainArchive = null;
-    // external archives
+    // External archives
     this.archives = new Map();
     this.metadata = new Map();
     this.defaultMetadata = {
-      children: [{}]
+      children: []
     };
   }
 
@@ -108,11 +114,10 @@ class DatHandler {
   }
 
   getMetadata() {
-    return Promise.resolve(Array.from(this.metadata.values()));
+    return Promise.resolve([...this.metadata.values()]);
   }
 
   async addDat({isMain, key, datOpts}) {
-
     if (key && this.archives.has(key)) {
       console.log('Already loaded key. Nothing to do.');
       return;
@@ -129,36 +134,37 @@ class DatHandler {
       ignoreHidden: true,
       compareFileContent: true,
       ...datOpts
-    }
+    };
 
-    const getDatJSON = async (archive) => {
+    const getDatJSON = async archive => {
       return new Promise((resolve, reject) => {
-        archive.readFile('/dat.json', (err, content) => {
+        archive.readFile('dat.json', (err, content) => {
           let metadata = {
             ...this.defaultMetadata,
             url: archive.key.toString('hex'),
+            fullPath: archive.key.toString('hex').slice(0, 6),
             title: archive.key.toString('hex').slice(0, 6),
             description: 'External Dat'
           };
           if (err) {
             console.warn(err);
-            return resolve(metadata)
+            return resolve(metadata);
           }
 
           try {
             const rawMeta = JSON.parse(content);
-            metadata = {...this.defaultMetadata, ...rawMeta, url: archive.key.toString('hex')};
+            metadata = {...this.defaultMetadata, ...rawMeta, fullPath: rawMeta.title, url: archive.key.toString('hex')};
             // TODO: emit metadata :thinking_face:
-          } catch (_) {
-          }
-          resolve(metadata)
+          } catch (_) {}
+
+          resolve(metadata);
         });
-      })
-    }
+      });
+    };
 
     let pathkey = key;
-    if (key && key.startsWith('dat://')){
-      pathkey = key.slice(6,key.length);
+    if (key && key.startsWith('dat://')) {
+      pathkey = key.slice(6, key.length);
       destDir = join(destDir, pathkey);
       await pmkdirp(destDir);
     }
@@ -178,9 +184,9 @@ class DatHandler {
         if (dat.writable) {
           dat.importFiles(importOpts);
         }
+
         // TODO: emit dat loaded ok
         const datJSON = await getDatJSON(dat.archive);
-        console.log({datJSON})
         this.metadata.set(key, datJSON);
 
         if (isMain) {
@@ -199,20 +205,30 @@ class DatHandler {
       pipeline(
         archive.createReadStream(filename),
         createWriteStream(filePath),
-        (err) => {
+        err => {
           if (err) {
             console.error(err);
             return reject(err);
-          } else {
-            console.log('File saved succesfully');
-            return resolve();
           }
+
+          console.log('File saved succesfully');
+          return resolve();
         }
-      )
+      );
     });
   }
 
-  async getFileTypeAndPath({ key, filename }) {
+  async checkAccess(filePath) {
+    try {
+      await access(filePath);
+      return true;
+    } catch (error) {
+      console.warn(error);
+      return false;
+    }
+  }
+
+  async getFileTypeAndPath({key, filename}) {
     assert.ok(key, 'key is required');
     assert.ok(filename, 'filename is required');
     const isMain = this.mainArchive === key;
@@ -221,23 +237,22 @@ class DatHandler {
     const read = archive.createReadStream(filename);
     let filePath = join(isMain ? dirs.main : dirs.dest, filename);
 
-    if (!isMain){
+    if (!isMain) {
       filePath = join(isMain ? dirs.main : dirs.dest, key, filename);
       const parent = join(isMain ? dirs.main : dirs.dest, key);
       await pmkdirp(parent);
-      try {
-        // check if file exists
-        await access(filePath);
-      } catch (_) {
-        // file does not exists, dwld it
+      const exists = await this.checkAccess(filePath);
+      if (!exists) {
+        // File does not exists, dwld it
         await this.downloadFile(archive, filename, filePath);
       }
     }
+
     const ftStream = await fileType.stream(read);
     return {fileType: ftStream.fileType, filePath};
   }
 
-  async getContent({ key, path }) {
+  async getContent({key, path}) {
     path = path || '/';
     // FIXME @deka: I need to rethink this whole interaction. the archive is not being passed correctly
     // due to the stringify on the dat-ipc. So I can pass the archive key for ex, as an identifier to get
@@ -248,14 +263,14 @@ class DatHandler {
       const fileContent = await getFileContent(archive, path);
       console.log('fileContent', fileContent);
     } else {
-      // return files
+      // Return files
       const list = await getDirContent(archive, path);
-      console.log({ list });
-      const files = await buildFileItems(archive, list);
-      console.log({ files });
+      console.log({list});
+      const files = await buildFileItems(archive, list, path);
+      console.log({files});
       return files;
     }
   }
-};
+}
 
-module.exports = (opts) => new DatHandler(opts);
+module.exports = opts => new DatHandler(opts);

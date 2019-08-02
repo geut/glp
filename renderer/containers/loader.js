@@ -22,6 +22,7 @@ const thoughts = [
 const message = thoughts[Math.floor(Math.random() * thoughts.length)];
 const Loader = () => {
   const classes = useStyles();
+
   return (
     <div className={classes.root}>
       <Typography gutterBottom variant="h5" className={classes.title}>
