@@ -3,6 +3,8 @@ import ReactDOM from 'react-dom';
 import '../client-preload';
 import './client-ipc';
 import '../index.css';
+import "draft-js/dist/Draft.css";
+import "draftail/dist/draftail.css";
 import Root from './root';
 
 // Render React app inside root
