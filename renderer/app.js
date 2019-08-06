@@ -13,8 +13,8 @@ import EditIcon from '@material-ui/icons/Edit';
 import FoldersIcon from '@material-ui/icons/Notes';
 
 import {switchcase} from 'common/utils';
-import GEUT from './components/logo';
 import Config from '../config';
+import GEUT from './components/logo';
 import {useStateValue} from './hooks';
 import Edit from './containers/edit';
 import Home from './containers/home';
@@ -29,7 +29,7 @@ const drawerWidth = 140;
 
 const useStyles = makeStyles(theme => ({
   root: {
-    display: 'flex',
+    display: 'flex'
   },
   logo: {
     width: '80px',
@@ -39,7 +39,7 @@ const useStyles = makeStyles(theme => ({
   },
   content: {
     flexGrow: 1,
-    padding: theme.spacing(3),
+    padding: theme.spacing(3)
   },
   toolbar: theme.mixins.toolbar,
   title: {
@@ -86,8 +86,7 @@ function AppContainer() {
     };
 
     getContent();
-  }, []);
-
+  }, [dispatch]);
 
   const actions = [
     {
@@ -111,31 +110,31 @@ function AppContainer() {
   const drawer = (
     <div className={classes.center}>
       <GEUT className={classes.logo}/>
-      <Divider />
+      <Divider/>
       <List>
         {actions.map(({action, icon, activePage}) => (
-          <ListItem button key={action} onClick={() => handleRoute(activePage)}>
+          <ListItem key={action} button onClick={() => handleRoute(activePage)}>
             <ListItemIcon>{icon()}</ListItemIcon>
-            <ListItemText primary={action} />
+            <ListItemText primary={action}/>
           </ListItem>
         ))}
       </List>
-      <Divider />
+      <Divider/>
     </div>
   );
 
   return (
     <div className={classes.root}>
-      <CssBaseline />
+      <CssBaseline/>
       <nav className={classes.drawer} aria-label="glp actions">
         <Drawer
           open
           variant="permanent"
           classes={{
-            paper: classes.drawerPaper,
+            paper: classes.drawerPaper
           }}
           ModalProps={{
-            keepMounted: true, // Better open performance on mobile.
+            keepMounted: true // Better open performance on mobile.
           }}
         >
           {drawer}
@@ -144,7 +143,7 @@ function AppContainer() {
       <main className={classes.content}>
         {switchcase({
           loading: () => <Fade in timeout={{enter: 200, exit: 200}}><Loader/></Fade>,
-          edit: () => <Fade in timeout={{enter: 200, exit: 200}}><Edit /></Fade>,
+          edit: () => <Fade in timeout={{enter: 200, exit: 200}}><Edit/></Fade>,
           home: () => <Fade in timeout={{enter: 200, exit: 200}}><Home mainKey={mainArchive} extra={extArchives} metadata={metadata}/></Fade>,
           detail: () => <Fade in timeout={{enter: 200, exit: 200}}><Detail fileData={fileData}/></Fade>
         })(<Loader/>)(activePage)}

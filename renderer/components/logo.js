@@ -46,5 +46,5 @@ export default props => {
         </g>
       </g>
     </svg>
-  )
-}
+  );
+};
