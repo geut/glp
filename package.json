@@ -29,6 +29,7 @@
     "@material-ui/lab": "^4.0.0-alpha.21",
     "dat-node": "^3.5.15",
     "draft-js": "^0.10.5",
+    "draft-js-inline-toolbar-plugin": "^3.0.0",
     "draftail": "^1.2.1",
     "electron-context-menu": "^0.12.1",
     "electron-debug": "^3.0.0",
@@ -43,8 +44,6 @@
     "prop-types": "^15.7.2",
     "react": "^16.8.6",
     "react-dom": "^16.8.6",
-    "react-sortable-tree": "^2.6.2",
-    "react-sortable-tree-theme-file-explorer": "^2.0.0",
     "typeface-cooper-hewitt": "0.0.44",
     "uuid": "^3.3.2"
   },
