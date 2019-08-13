@@ -47,6 +47,7 @@ function Home(props) {
       if (children) {
         element.children = children;
       }
+
       return element;
     }
 
@@ -111,7 +112,6 @@ function Home(props) {
   };
 
   const renderTreeItem = (item, rootKey, path = '') => {
-
     if (!item.children) {
       return (
         <TreeItem
@@ -124,7 +124,7 @@ function Home(props) {
 
     return (
       <TreeItem nodeId={getNodeId(item, rootKey, path)} label={item.title}>
-        {item.children[0] ? item.children.map(i => renderTreeItem(i, rootKey)) : <LinearProgress />}
+        {item.children[0] ? item.children.map(i => renderTreeItem(i, rootKey)) : <LinearProgress/>}
       </TreeItem>
     );
   };
